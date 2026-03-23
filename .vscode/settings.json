@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/marcos/Desktop/termGame",
+            "binaryPath": "/home/marcos/Desktop/termGame/Main",
+            "binaryArgs": []
+        }
+    ]
+}
