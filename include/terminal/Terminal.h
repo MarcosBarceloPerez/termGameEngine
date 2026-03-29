@@ -17,20 +17,21 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-//Configure terminal
+// Configure terminal modes
 void changeTerminalToNonCanonicalMode();
 void resetTerminalMode();
 
-//Read terminal
+// Read input character
 char getChar();
 
-//Manipulate terminal
+// Terminal screen and cursor control
 void moveCursor(unsigned int row, unsigned int column);
 void clearTerminal();
 void clearLine();
 void saveCursor();
 void restoreCursor();
 
+//Text and background color functions
 void setTextColor(unsigned int color);
 void setBGColor(unsigned int color);
 void setTextAndBGColor(unsigned int textColor, unsigned int backgroundColor);

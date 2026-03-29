@@ -1,9 +1,12 @@
 #include "../include/terminal/Terminal.h"
 
-//Configure terminal
+// Terminal control utilities with ANSI escape sequences and raw mode.
+
+// Configure terminal
 
 struct termios oldTerm;
 
+// Switch terminal to non-canonical mode: no line buffering, no echo.
 void changeTerminalToNonCanonicalMode(){
     struct termios newTerm;
 
@@ -55,7 +58,7 @@ void restoreCursor(){
 }
 
 
-
+//Text and background color functions.
 void setTextColor(unsigned int color){
     printf("\033[%um", color);
 }

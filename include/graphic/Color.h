@@ -2,11 +2,10 @@
 #define COLOR_H
 
 typedef struct{
-
     unsigned char red, green, blue, alpha;
-
 }Color;
 
+// Convert an RGBA color to non-transparent RGB.
 Color getAbsoluteColor(Color color, int alpha);
 
 #endif

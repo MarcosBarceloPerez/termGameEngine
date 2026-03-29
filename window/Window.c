@@ -1,17 +1,21 @@
 #include "../include/window/Window.h"
 
-static void wFormPixelLine(RGBACTChannels currentChannels, int alpha, int textContrast, int width, char *buffer);
-static void wFormPixel(RGBACTChannels currentChannels, int alpha, int textContrast, char **buffer);
+// Internal helpers to fill buffer with ANSI RGB sequences.
+static void wFormPixelLine(RGBACTChannels *currentChannels, int alpha, int textContrast, int width, char *buffer);
+static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContrast, char **buffer);
 static void wGenStringColor(int color, char *buffer);
 
+// Initialize terminal mode for window rendering (raw input mode).
 void windowInitTerminal(){
     changeTerminalToNonCanonicalMode();
 }
 
+// Reset terminal mode to its original state.
 void windowresetTerminal(){
     resetTerminalMode();
 }
 
+//Initialize window and channels.
 void createWindow(WindowAttributes pAttributes, Window *window){
     WindowAttributes *attributes = NULL;
 
@@ -40,12 +44,19 @@ void createWindow(WindowAttributes pAttributes, Window *window){
     if((attributes->color_flags & COLOR_USE_TEXT_CONTRAST) != 0){
         window->channels.textContrast = malloc(channelSizes);
     }
+
+    //Used in display(), see it.
+    window->displayBufferLineSize = window->attributes->width * 39; //39 is de size of a pixel encoded into ANSI in bytes.
+    window->displayLineBuffer = malloc(window->displayBufferLineSize);
 }
 
+//Destroy window and channels.
 void destroyWindow(Window *window){
     free(window->channels.redChannel);
     free(window->channels.greenChannel);
     free(window->channels.blueChannel);
+
+    free(window->displayLineBuffer);
 
     if((window->attributes->color_flags & COLOR_USE_ALPHA) != 0){
         free(window->channels.alphaChannel);
@@ -59,34 +70,58 @@ void destroyWindow(Window *window){
     free(window);
 }
 
-
-
+//Displays window content in the terminal.
 void display(Window *window){
+    /*
+    For a fast display, this function first builds a line of pixels encoded into ANSI in a buffer, and then displays,
+    because if the function build and display pixel by pixel, it would be so slow.
+    */
 
-}
+    /*
+    The buffer (Window.displayLineBuffer) is initializated when window is created for eviting doing malloc() and free() at every frame.
+    */
 
-static void wFormPixelLine(RGBACTChannels currentChannels, int alpha, int textContrast, int width, char *buffer){
-    for(int i = 0; i < width; i++){
-        wFormPixel(currentChannels, alpha, textContrast, &buffer);
+    char *buffer = window->displayLineBuffer;
 
-        currentChannels.redChannel++;
-        currentChannels.greenChannel++;
-        currentChannels.blueChannel++;
-        currentChannels.alphaChannel++;
-        currentChannels.textContrast++;
+    RGBACTChannels currentChannels = window->channels;
+
+    int usesAlpha = window->attributes->color_flags & COLOR_USE_ALPHA;
+    int usesContrast = window->attributes->color_flags & COLOR_USE_TEXT_CONTRAST;
+
+    for(int line = 0; line < window->attributes->height; line++){
+        wFormPixelLine(&currentChannels, usesAlpha, usesContrast, window->attributes->width, buffer);
+        write(STDOUT_FILENO, buffer, window->displayBufferLineSize); //Print buffer into the terminal.
     }
 }
 
-static void wFormPixel(RGBACTChannels currentChannels, int alpha, int textContrast, char **buffer){
+//Encodes a line of pixels into a buffer using ANSI tat will be displayed
+static void wFormPixelLine(RGBACTChannels *currentChannels, int alpha, int textContrast, int width, char *buffer){
+    //In context: Current channels contains pointers into the RGBACT channels pointing to the pixel that display is displaying.
+    for(int i = 0; i < width; i++){
+        wFormPixel(currentChannels, alpha, textContrast, &buffer);
+
+        //Steps into the next pixel.
+        currentChannels->redChannel++;
+        currentChannels->greenChannel++;
+        currentChannels->blueChannel++;
+        currentChannels->alphaChannel++;
+        currentChannels->textContrast++;
+    }
+}
+
+//Encodes one pixel into a buffer using ANSI. 
+static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContrast, char **buffer){
     Color color;
     Color absoluteColor;
 
-    color.red = *(currentChannels.redChannel);
-    color.green = *(currentChannels.greenChannel);
-    color.blue = *(currentChannels.blueChannel);
+    color.red = *(currentChannels->redChannel);
+    color.green = *(currentChannels->greenChannel);
+    color.blue = *(currentChannels->blueChannel);
 
-    if(alpha) color.alpha = *(currentChannels.alphaChannel);
+    //For eviting a segmentation fault.
+    if(alpha) color.alpha = *(currentChannels->alphaChannel);
 
+    //It gets the absolute color because terminal doesn't support opacity.
     absoluteColor = getAbsoluteColor(color, alpha);
 
     char red[3];
@@ -97,6 +132,8 @@ static void wFormPixel(RGBACTChannels currentChannels, int alpha, int textContra
     wGenStringColor(absoluteColor.green, green);
     wGenStringColor(absoluteColor.blue, blue);
 
+    //Encode the colors into ANSI.
+    //Encoding: "\033[38;2;R;G;Bm\033[48;2;R;G;Bm" being R red, G green, B blue, and thern the character ' ' that is the pixel.
     **buffer = '\033';
     (*buffer)++;
 
@@ -200,8 +237,12 @@ static void wFormPixel(RGBACTChannels currentChannels, int alpha, int textContra
 
     **buffer = 'm';
     (*buffer)++;
+
+    //TODO: Program it using text and contrast channel.
+    **buffer = ' ';
 }
 
+//Creates a char[3], transforming a number into a string.
 static void wGenStringColor(int color, char *buffer){
     buffer[0] = (color / 100) + '0';
     buffer[1] = (color / 10) % 10 + '0';
