@@ -21,3 +21,24 @@ Color getAbsoluteColor(Color color, int alpha){
 
     return absoluteColor;
 }
+
+//Calculates the contrast color (black or white) with a weighted sum, of another color.
+Color getContrast(Color color, int alpha){
+    Color contrast;
+    Color absoluteColor = getAbsoluteColor(color, alpha);
+
+    int distanceSQ = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue;
+    
+    if(distanceSQ >= 128){
+        contrast.red = 0;
+        contrast.green = 0;
+        contrast.blue = 0;
+    }
+    else{
+        contrast.red = 255;
+        contrast.green = 255;
+        contrast.blue = 255;
+    }
+
+    return contrast;
+}

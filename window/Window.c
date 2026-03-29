@@ -111,33 +111,51 @@ static void wFormPixelLine(RGBACTChannels *currentChannels, int alpha, int textC
         currentChannels->redChannel++;
         currentChannels->greenChannel++;
         currentChannels->blueChannel++;
-        currentChannels->alphaChannel++;
-        currentChannels->textContrast++;
+        if(alpha) currentChannels->alphaChannel++;
+        if(textContrast) currentChannels->textContrast++;
     }
 }
 
 //Encodes one pixel into a buffer using ANSI. 
 static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContrast, char **buffer){
-    Color color;
-    Color absoluteColor;
+    Color backgroundColor;
+    Color absoluteBackgroundColor;
+    Color textColor;
 
-    color.red = *(currentChannels->redChannel);
-    color.green = *(currentChannels->greenChannel);
-    color.blue = *(currentChannels->blueChannel);
+    backgroundColor.red = *(currentChannels->redChannel);
+    backgroundColor.green = *(currentChannels->greenChannel);
+    backgroundColor.blue = *(currentChannels->blueChannel);
 
     //For eviting a segmentation fault.
-    if(alpha) color.alpha = *(currentChannels->alphaChannel);
+    if(alpha) backgroundColor.alpha = *(currentChannels->alphaChannel);
 
     //It gets the absolute color because terminal doesn't support opacity.
-    absoluteColor = getAbsoluteColor(color, alpha);
+    absoluteBackgroundColor = getAbsoluteColor(backgroundColor, alpha);
 
-    char red[3];
-    char green[3];
-    char blue[3];
+    char bgRed[3];
+    char bgGreen[3];
+    char bgBlue[3];
 
-    wGenStringColor(absoluteColor.red, red);
-    wGenStringColor(absoluteColor.green, green);
-    wGenStringColor(absoluteColor.blue, blue);
+    wGenStringColor(absoluteBackgroundColor.red, bgRed);
+    wGenStringColor(absoluteBackgroundColor.green, bgGreen);
+    wGenStringColor(absoluteBackgroundColor.blue, bgBlue);
+
+    //Calculate text contrast.
+    int usesContrast = textContrast && *(currentChannels->textContrast);
+    if(usesContrast){
+        textColor = getContrast(absoluteBackgroundColor, 0);
+    }
+    else{
+        textColor = absoluteBackgroundColor;
+    }
+
+    char txtRed[3];
+    char txtGreen[3];
+    char txtBlue[3];
+
+    wGenStringColor(textColor.red, txtRed);
+    wGenStringColor(textColor.green, txtGreen);
+    wGenStringColor(textColor.blue, txtBlue);
 
     //Encode the colors into ANSI.
     //Encoding: "\033[38;2;R;G;Bm\033[48;2;R;G;Bm" being R red, G green, B blue, and thern the character ' ' that is the pixel.
@@ -162,31 +180,31 @@ static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContr
     **buffer = ';';
     (*buffer)++;
 
-    **buffer = red[0];
+    **buffer = txtRed[0];
     (*buffer)++;
-    **buffer = red[1];
+    **buffer = txtRed[1];
     (*buffer)++;
-    **buffer = red[2];
-    (*buffer)++;
-
-    **buffer = ';';
-    (*buffer)++;
-
-    **buffer = green[0];
-    (*buffer)++;
-    **buffer = green[1];
-    (*buffer)++;
-    **buffer = green[2];
+    **buffer = txtRed[2];
     (*buffer)++;
 
     **buffer = ';';
     (*buffer)++;
 
-    **buffer = blue[0];
+    **buffer = txtGreen[0];
     (*buffer)++;
-    **buffer = blue[1];
+    **buffer = txtGreen[1];
     (*buffer)++;
-    **buffer = blue[2];
+    **buffer = txtGreen[2];
+    (*buffer)++;
+
+    **buffer = ';';
+    (*buffer)++;
+
+    **buffer = txtBlue[0];
+    (*buffer)++;
+    **buffer = txtBlue[1];
+    (*buffer)++;
+    **buffer = txtBlue[2];
     (*buffer)++;
 
     **buffer = 'm';
@@ -215,38 +233,41 @@ static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContr
     **buffer = ';';
     (*buffer)++;
 
-    **buffer = red[0];
+    **buffer = bgRed[0];
     (*buffer)++;
-    **buffer = red[1];
+    **buffer = bgRed[1];
     (*buffer)++;
-    **buffer = red[2];
-    (*buffer)++;
-
-    **buffer = ';';
-    (*buffer)++;
-
-    **buffer = green[0];
-    (*buffer)++;
-    **buffer = green[1];
-    (*buffer)++;
-    **buffer = green[2];
+    **buffer = bgRed[2];
     (*buffer)++;
 
     **buffer = ';';
     (*buffer)++;
 
-    **buffer = blue[0];
+    **buffer = bgGreen[0];
     (*buffer)++;
-    **buffer = blue[1];
+    **buffer = bgGreen[1];
     (*buffer)++;
-    **buffer = blue[2];
+    **buffer = bgGreen[2];
+    (*buffer)++;
+
+    **buffer = ';';
+    (*buffer)++;
+
+    **buffer = bgBlue[0];
+    (*buffer)++;
+    **buffer = bgBlue[1];
+    (*buffer)++;
+    **buffer = bgBlue[2];
     (*buffer)++;
 
     **buffer = 'm';
     (*buffer)++;
 
-    //TODO: Program it using text and contrast channel.
-    **buffer = ' ';
+    if(!usesContrast) **buffer = ' ';
+    else{
+        **buffer = *currentChannels->textBuffer;
+        currentChannels->textBuffer++;
+    }
     (*buffer)++;
 }
 
