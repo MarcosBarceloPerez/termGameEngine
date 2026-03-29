@@ -50,10 +50,10 @@ typedef struct{
 
 //Functions for configure the terminal for the window.
 void windowInitTerminal();
-void windowresetTerminal();
+void windowResetTerminal();
 
 //Creation and destruction of window.
-void createWindow(WindowAttributes attributes, Window *window);
+Window *createWindow(WindowAttributes attributes);
 void destroyWindow(Window *window);
 
 //Function to display the window content in the termianl.

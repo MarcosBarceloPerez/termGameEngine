@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -fPIC
+CFLAGS = -fPIC -g
 
 # Output executable name
 EXEC = Main

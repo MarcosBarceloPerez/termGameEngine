@@ -11,13 +11,16 @@ void windowInitTerminal(){
 }
 
 // Reset terminal mode to its original state.
-void windowresetTerminal(){
+void windowResetTerminal(){
     resetTerminalMode();
+    resetColor();
 }
 
 //Initialize window and channels.
-void createWindow(WindowAttributes pAttributes, Window *window){
+Window *createWindow(WindowAttributes pAttributes){
     WindowAttributes *attributes = NULL;
+
+    Window *window = NULL;
 
     window = malloc(sizeof(Window));
     attributes = malloc(sizeof(WindowAttributes));
@@ -48,6 +51,8 @@ void createWindow(WindowAttributes pAttributes, Window *window){
     //Used in display(), see it.
     window->displayBufferLineSize = window->attributes->width * 39; //39 is de size of a pixel encoded into ANSI in bytes.
     window->displayLineBuffer = malloc(window->displayBufferLineSize);
+
+    return window;
 }
 
 //Destroy window and channels.
@@ -91,6 +96,8 @@ void display(Window *window){
     for(int line = 0; line < window->attributes->height; line++){
         wFormPixelLine(&currentChannels, usesAlpha, usesContrast, window->attributes->width, buffer);
         write(STDOUT_FILENO, buffer, window->displayBufferLineSize); //Print buffer into the terminal.
+        //TODO: rewrite.
+        printf("\n");
     }
 }
 
@@ -240,6 +247,7 @@ static void wFormPixel(RGBACTChannels *currentChannels, int alpha, int textContr
 
     //TODO: Program it using text and contrast channel.
     **buffer = ' ';
+    (*buffer)++;
 }
 
 //Creates a char[3], transforming a number into a string.
