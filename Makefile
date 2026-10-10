@@ -14,11 +14,9 @@ OBJS += build/window/Window.o
 all: $(EXEC)
 
 run: all
-	@changeToPublicPixelFont
 	@clear
 	@./Main
 	@read -n 1 -s -r -p "Presiona cualquier tecla para continuar..."
-	@resetFont
 	@clear
 
 $(EXEC): $(OBJS)
